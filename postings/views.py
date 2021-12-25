@@ -12,16 +12,12 @@ class PostingView(View):
         try:
             data = json.loads(request.body)
 
-            user_id   = data['user_id']
             content   = data['content']
             image_url = data['image_url']
 
-            if not User.objects.filter(id=user_id).exists():
-                raise ValidationError('USER_DOES_NOT_EXISTS')
-
             Posting.objects.create(
-                user_id = user_id,
-                content = content,
+                user_id   = request.user.id,
+                content   = content,
                 image_url = image_url
             )
 
@@ -29,10 +25,6 @@ class PostingView(View):
 
         except KeyError:
             return JsonResponse({'message':'KEY_ERROR'}, status=400)
-
-        except ValidationError:
-            return JsonResponse({}, status=400)
-
 
     def get(self, request):
         postings = Posting.objects.all()
