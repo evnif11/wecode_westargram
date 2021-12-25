@@ -5,7 +5,6 @@ from django.http.response import JsonResponse
 from django.views import View
 
 from postings.models import Posting
-from users.models import User
 
 class PostingView(View):
     def post(self, request):
@@ -27,7 +26,17 @@ class PostingView(View):
             return JsonResponse({'message':'KEY_ERROR'}, status=400)
 
     def get(self, request):
-        postings = Posting.objects.all()
+        last_id = request.GET.get('last_id')
+
+        query = Posting.objects.order_by('-id')
+        if last_id:
+            try:
+                last_id = int(last_id)
+            except ValueError:
+                return JsonResponse({'message':'INVALID_QUERY_PARAM'}, status=400)
+            query = query.filter(id__lt=last_id)
+        postings = query[:10]
+
         result = []
         for posting in postings:
             result.append({
@@ -37,7 +46,8 @@ class PostingView(View):
                 'like'         : posting.number_of_likes,
                 'username'     : posting.user.username,
                 'profile_photo': posting.user.profile_photo,
-                'user_id'      : posting.user_id
+                'user_id'      : posting.user_id,
+                'id'           : posting.id
             })
 
         return JsonResponse({'result':result}, status=200)
