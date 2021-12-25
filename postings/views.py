@@ -4,9 +4,11 @@ from django.http.response import JsonResponse
 
 from django.views import View
 
-from postings.models import Posting
+from postings.models import Posting, Comment
+from users.decorators import login_required
 
 class PostingView(View):
+    @login_required
     def post(self, request):
         try:
             data = json.loads(request.body)
@@ -25,6 +27,7 @@ class PostingView(View):
         except KeyError:
             return JsonResponse({'message':'KEY_ERROR'}, status=400)
 
+    @login_required
     def get(self, request):
         last_id = request.GET.get('last_id')
 
@@ -37,9 +40,8 @@ class PostingView(View):
             query = query.filter(id__lt=last_id)
         postings = query[:10]
 
-        result = []
-        for posting in postings:
-            result.append({
+        result = [
+            {
                 'image'        : posting.image_url,
                 'content'      : posting.content,
                 'created_at'   : posting.created_at,
@@ -48,6 +50,47 @@ class PostingView(View):
                 'profile_photo': posting.user.profile_photo,
                 'user_id'      : posting.user_id,
                 'id'           : posting.id
-            })
+            }
+            for posting in postings
+        ]
 
         return JsonResponse({'result':result}, status=200)
+
+class CommentView(View):
+    @login_required
+    def post(self, request, posting_id):
+        data = json.loads(request.body)
+
+        content = data['content']
+
+        comment = Comment.objects.create(
+            content = content,
+            user_id = request.user.id,
+            posting_id = posting_id
+        )
+
+        result = self.to_json(comment)
+
+        return JsonResponse({"result":result}, status=201)
+
+    @login_required
+    def get(self, request, posting_id):
+        comments = Comment.objects.filter(posting_id=posting_id).order_by('id')
+
+        result = [
+            self.to_json(comment)
+            for comment in comments
+        ]
+
+        return JsonResponse({'result':result}, status=200)
+
+    def to_json(self, comment):
+        return {
+            'content'      : comment.content,
+            'created_at'   : comment.created_at,
+            'id'           : comment.id,
+            'username'     : comment.user.username,
+            'profile_photo': comment.user.profile_photo,
+            'user_id'      : comment.user_id,
+            'posting_id'   : comment.posting_id
+        }
