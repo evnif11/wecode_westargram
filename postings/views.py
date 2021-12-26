@@ -152,3 +152,32 @@ class UnfollowView(View):
 
         return JsonResponse({"message":"SUCCESS"}, status=200)
 
+class FollowerListView(View):
+    def get(self, request, user_id):
+        follows = Follow.objects.filter(following_id=user_id).order_by('-created_at')
+
+        result = [
+            {
+                'username'     : follow.follower.username,
+                'profile_photo': follow.follower.profile_photo,
+                'user_id'      : follow.follower.id
+            }
+            for follow in follows
+        ]
+
+        return JsonResponse({"result":result}, status=200)
+
+class FollowingListView(View):
+    def get(self, request, user_id):
+        follows = Follow.objects.filter(follower_id=user_id).order_by('-created_at')
+
+        result = [
+            {
+                'username'     : follow.following.username,
+                'profile_photo': follow.following.profile_photo,
+                'user_id'      : follow.following.id
+            }
+            for follow in follows
+        ]
+
+        return JsonResponse({"result":result}, status=200)
