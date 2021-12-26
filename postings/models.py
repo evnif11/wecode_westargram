@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models.constraints import UniqueConstraint
 from django.db.models.deletion import CASCADE
 
 from users.models import User
@@ -30,3 +31,25 @@ class Like(models.Model):
 
     class Meta:
         db_table = "likes"
+
+class Follow(models.Model):
+    follower = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='+'
+    )
+    following =  models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='+'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "follow"
+        constraints = [
+            UniqueConstraint(
+                fields = ['follower', 'following'],
+                name = 'follower_following'
+            )
+        ]
