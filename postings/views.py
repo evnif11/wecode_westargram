@@ -4,7 +4,7 @@ from django.http.response import JsonResponse
 
 from django.views import View
 
-from postings.models import Like, Posting, Comment
+from postings.models import Follow, Like, Posting, Comment
 from users.decorators import login_required
 
 class PostingView(View):
@@ -108,7 +108,6 @@ class LikeView(View):
             )
         return JsonResponse({'message':'SUCCESS'}, status=200)
 
-
 class LikersView(View):
     @login_required
     def get(self, request, posting_id):
@@ -123,3 +122,33 @@ class LikersView(View):
             for liker in likers
         ]
         return JsonResponse({"result":result}, status=200)
+
+class FollowView(View):
+    @login_required
+    def post(self, request):
+        data = json.loads(request.body)
+
+        following_id = data['following_id']
+
+        if not Follow.objects.filter(
+            follower_id=request.user.id,
+            following_id=following_id
+        ).exists():
+            Follow.objects.create(
+                follower_id = request.user.id,
+                following_id = following_id
+            )
+        return JsonResponse({"message":"SUCCESS"}, status=200)
+
+class UnfollowView(View):
+    @login_required
+    def post(self, request):
+        data = json.loads(request.body)
+
+        Follow.objects.filter(
+            follower_id = request.user.id,
+            following_id = data['unfollowing']
+        ).delete()
+
+        return JsonResponse({"message":"SUCCESS"}, status=200)
+
